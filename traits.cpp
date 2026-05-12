@@ -1,4 +1,5 @@
 #include <iostream>
+#include <utility>
 
 
 //is_same
@@ -169,16 +170,40 @@ struct is_const<const T&> : public true_type {
 
 };
 
+//is_convertable
+template <typename From, typename To> //with SFINAE
+struct is_castable {
+    private:
+        static void test(To) {}
+        template <typename T, typename = decltype(test(std::declval<T>()))>
+        static true_type check(int);
+        template <typename>
+        static false_type check(...);
 
+    public:
+        static constexpr bool value = decltype(check<From>(0))::value;
+};
 
 
 
 //after c++ 17
-// template <typename T, typename U>
-// using is_same_v = is_same<T, U>::value;
+template <typename T, typename U>
+inline constexpr bool is_same_v = is_same<T, U>::value;
 
-// template <typename T>
-// using is_void_v = is_void<T>::value;
+template <typename T>
+inline constexpr bool is_void_v = is_void<T>::value;
+
+template <typename T>
+inline constexpr bool is_pointer_v = is_pointer<T>::value;
+
+template <typename T>
+inline constexpr  bool is_reference_v = is_reference<T>::value;
+
+template <typename T>
+inline constexpr bool is_const_v = is_const<T>::value;
+
+template <typename From, typename To>
+inline constexpr bool is_castable_v = is_castable<From, To>::value;
 
 template <typename T>
 using remove_const_t = typename remove_const<T>::type;
@@ -196,17 +221,21 @@ template <typename T>
 using add_reference_t = typename add_reference<T>::type;
 
 
+
 int main() {
     static_assert(!is_same<int, char>::value);
-    static_assert(is_void<void>::value);
-    static_assert(is_same<remove_const_t<const int>, int>::value);
-    static_assert(is_same<remove_volatile_t<volatile int>, int>::value);
-    static_assert(is_same<remove_cv_t<const volatile int>, int>::value);
-    static_assert(is_pointer<int* const>::value);
-    static_assert(is_same<remove_reference_t<int&>, int>::value);
-    static_assert(is_same<remove_reference_t<int&&>, int>::value);
-    static_assert(is_same<int&, add_reference_t<int>>::value);
-    static_assert(is_reference<const int&&>::value);
-    static_assert(is_const<const int*>::value);
+    static_assert(is_void_v<void>);
+    static_assert(is_same_v<remove_const_t<const int>, int>);
+    static_assert(is_same_v<remove_volatile_t<volatile int>, int>);
+    static_assert(is_same_v<remove_cv_t<const volatile int>, int>);
+    static_assert(is_pointer_v<int* const>);
+    static_assert(is_same_v<remove_reference_t<int&>, int>);
+    static_assert(is_same_v<remove_reference_t<int&&>, int>);
+    static_assert(is_same_v<int&, add_reference_t<int>>);
+    static_assert(is_reference_v<const int&&>);
+    static_assert(is_const_v<const int*>);
+    static_assert(is_castable_v<char, int>);
+    static_assert(!is_castable_v<char, std::string>);
+
     std::cout << "test passed\n";
 }
